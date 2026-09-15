@@ -1,13 +1,7 @@
 import { globalIgnores } from 'eslint/config'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'
-import pluginOxlint from 'eslint-plugin-oxlint'
 import skipFormatting from 'eslint-config-prettier/flat'
-
-// To allow more languages other than `ts` in `.vue` files, uncomment the following lines:
-// import { configureVueProject } from '@vue/eslint-config-typescript'
-// configureVueProject({ scriptLangs: ['ts', 'tsx'] })
-// More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
 
 export default defineConfigWithVueTs(
   {
@@ -20,7 +14,13 @@ export default defineConfigWithVueTs(
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
 
-  ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
+  // 这里加上自定义规则
+  {
+    rules: {
+      // 关闭“组件名必须多个单词”的检查（适合 views/xxx/index.vue 这种目录结构）
+      'vue/multi-word-component-names': 'off',
+    },
+  },
 
   skipFormatting,
 )

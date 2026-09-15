@@ -58,7 +58,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item>个人中心</el-dropdown-item>
-                <el-dropdown-item divided>退出登录</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -76,8 +76,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { HomeFilled, User, Fold, Expand } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
 
 // 控制菜单折叠状态
 const isCollapse = ref(false)
@@ -89,6 +90,15 @@ const toggleCollapse = () => {
 const route = useRoute()
 const activeMenu = computed(() => route.path)
 const currentRouteName = computed(() => route.meta.title || route.name || '首页')
+
+// 退出登录
+const router = useRouter()
+const userStore = useUserStore()
+
+const handleLogout = () => {
+  userStore.logout() // 清空 Pinia 和 localStorage 里的 token
+  router.push('/login') // 跳转到登录页
+}
 </script>
 
 <style scoped lang="less">
