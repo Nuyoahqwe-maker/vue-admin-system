@@ -2,6 +2,8 @@
 
 基于 Vue3 + TypeScript + Vite + ElementPlus 构建的通用后台管理系统，包含用户管理 CRUD、Mock 数据持久化、ECharts 数据看板、登录鉴权等完整功能。
 
+**🔗 在线预览**：<!-- 部署完成后把访问地址填到这里 -->
+
 ## 🛠️ 技术栈
 
 - **核心框架**：Vue3 + TypeScript + Vite
@@ -13,7 +15,7 @@
 - **数据可视化**：ECharts
 - **样式方案**：Less（全局变量注入）
 - **代码规范**：ESLint + Prettier
-- **性能优化**：CDN 按需加载 + 代码分割
+- **性能优化**：Element Plus / ECharts 按需引入 + 代码分割
 
 ## ✨ 核心功能
 
@@ -49,9 +51,21 @@
 
 ## 🚀 性能优化
 
-- **CDN 按需加载**：通过 `vite-plugin-cdn-import` 将 `element-plus`、`echarts` 等大体积库从打包产物中剥离，改用 CDN 引入，**首屏加载速度提升约 20%**
-- **代码分割**：使用 `manualChunks` 将 Vue、ElementPlus、ECharts 等拆分为独立 chunk
+- **Element Plus 按需引入**：通过 `unplugin-vue-components` + `unplugin-auto-import`，模板里用到哪个组件才打包哪个，替代原本的全量引入
+- **ECharts 按需引入**：基于 `echarts/core` 只注册折线图、饼图及所需组件，替代 1MB 的全量包
+- **代码分割**：使用 `manualChunks` 将 Vue、Element Plus、ECharts 等拆分为独立 chunk
 - **路由懒加载**：所有页面组件按需加载
+
+优化前后主要资源体积对比：
+
+| 资源 | 优化前 | 优化后 |
+| --- | --- | --- |
+| Element Plus JS | 975 KB | 441 KB |
+| Element Plus CSS | 359 KB | 159 KB |
+| ECharts | 1000 KB | 530 KB |
+| 图标库 | ~430 KB | 0（按需 import） |
+
+**首屏资源总量从 3.1MB 降至 1.4MB。**
 
 ## 📦 项目运行
 
