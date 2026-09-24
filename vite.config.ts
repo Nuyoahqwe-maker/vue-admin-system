@@ -2,29 +2,20 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
-// 1. 引入 CDN 插件（需要先安装：npm install vite-plugin-cdn-import -D）
-import importToCDN from 'vite-plugin-cdn-import'
+// 按需引入：模板里用到哪个组件，才打包哪个组件
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
-    // 2. 配置 CDN 按需加载
-    importToCDN({
-      modules: [
-        {
-          name: 'element-plus',
-          var: 'ElementPlus',
-          path: 'https://unpkg.com/element-plus@2.9.1/dist/index.full.min.js',
-          css: 'https://unpkg.com/element-plus@2.9.1/dist/index.css',
-        },
-        {
-          name: 'echarts',
-          var: 'echarts',
-          path: 'https://unpkg.com/echarts@5.5.1/dist/echarts.min.js',
-        },
-      ],
-    }),
+    // Element Plus 按需引入
+    // AutoImport 负责自动导入 ElMessage / ElMessageBox 这类函数式 API
+    // Components 负责自动导入 <el-table> / <el-button> 这类组件
+    AutoImport({ resolvers: [ElementPlusResolver()] }),
+    Components({ resolvers: [ElementPlusResolver()] }),
   ],
   resolve: {
     alias: {
@@ -44,21 +35,20 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // 把 Vue 相关的库打包到一个文件
-            if (id.includes('vue') || id.includes('pinia')) {
-              return 'vue-vendor'
-            }
-            // 把 ElementPlus 打包到一个文件
+            // 注意判断顺序：'@element-plus/icons-vue' 的路径里也含 'vue'，
+            // 如果把 vue 的判断放前面，图标库会被误归到 vue-vendor 里
             if (id.includes('element-plus')) {
               return 'element-plus'
             }
-            // 把 ECharts 打包到一个文件
-            if (id.includes('echarts')) {
+            // zrender 是 ECharts 的底层依赖，要一起放进来
+            if (id.includes('echarts') || id.includes('zrender')) {
               return 'echarts'
             }
-            // 把 Mock.js 打包到一个文件
             if (id.includes('mockjs')) {
               return 'mockjs'
+            }
+            if (id.includes('vue') || id.includes('pinia')) {
+              return 'vue-vendor'
             }
             // 其他的第三方库统一打包到 vendor
             return 'vendor'

@@ -4,29 +4,22 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-// 1. 引入 ElementPlus 组件库
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-// 引入 ElementPlus 图标库
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-
-// 引入全局样式（如果你刚才建了的话）
+// 全局样式
 import '@/assets/styles/global.less'
+
+// Mock 数据（仅在开发环境下生效）
+import './mock/user'
+
+// 注意：这里不再需要 import ElementPlus、它的 CSS，也不需要 app.use(ElementPlus)
+// 因为 vite.config.ts 里配了 unplugin-vue-components 的 ElementPlusResolver，
+// 模板里写到 <el-table> / <el-button> 时，组件和对应样式会被自动按需引入。
+//
+// 图标同理：不再全局注册所有图标（那样会把整个图标库都打进包里），
+// 而是每个用到图标的文件自己 import，用到几个打包几个。
 
 const app = createApp(App)
 
-// 2. 注册所有图标为全局组件（这段代码必须要有！）
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
-
 app.use(createPinia())
 app.use(router)
-
-// 3. 挂载 ElementPlus（这行必须要有！）
-app.use(ElementPlus)
-
-// 引入 Mock 数据（仅在开发环境下生效）
-import './mock/user'
 
 app.mount('#app')

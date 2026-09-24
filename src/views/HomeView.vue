@@ -41,8 +41,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, markRaw } from 'vue'
-import * as echarts from 'echarts'
+// ECharts 按需引入：只打包真正用到的图表类型和组件
+// 全量引入 echarts 是 1MB，这样按需之后只有 200KB 左右
+import * as echarts from 'echarts/core'
+import { LineChart, PieChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { User, UserFilled, DataLine, View } from '@element-plus/icons-vue'
+
+// 注册用到的图表类型和组件（折线图、饼图 + 网格、提示框、图例 + Canvas 渲染器）
+echarts.use([LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 // --- 顶部统计卡片数据 ---
 const statList = [
