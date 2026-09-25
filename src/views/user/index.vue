@@ -19,29 +19,21 @@
         </el-button>
       </div>
 
-      <el-table :data="tableData" style="width: 100%" border stripe v-loading="loading">
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="email" label="邮箱" min-width="180" />
-        <el-table-column prop="role" label="角色" width="120" align="center">
-          <template #default="scope">
-            <el-tag :type="scope.row.role === '管理员' ? 'danger' : 'success'">
-              {{ scope.row.role }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" align="center" />
-        <el-table-column label="操作" width="180" align="center" fixed="right">
-          <template #default="scope">
-            <el-button size="small" type="primary" link @click="handleEdit(scope.row)"
-              >编辑</el-button
-            >
-            <el-button size="small" type="danger" link @click="handleDelete(scope.row)"
-              >删除</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- 配置式表格：只传 columns 和 data，其余交给插槽自定义 -->
+      <ConfigTable :columns="columns" :data="tableData" :loading="loading" border stripe>
+        <!-- 角色列：自定义渲染成标签 -->
+        <template #role="{ row }">
+          <el-tag :type="row.role === '管理员' ? 'danger' : 'success'">
+            {{ row.role }}
+          </el-tag>
+        </template>
+
+        <!-- 操作列：自定义渲染成按钮 -->
+        <template #action="{ row }">
+          <el-button size="small" type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button size="small" type="danger" link @click="handleDelete(row)">删除</el-button>
+        </template>
+      </ConfigTable>
 
       <div class="pagination-container">
         <el-pagination
@@ -56,21 +48,9 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" @close="resetForm">
-      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="80px">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="formData.username" placeholder="请输入用户名" />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="formData.email" placeholder="请输入邮箱" />
-        </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-select v-model="formData.role" placeholder="请选择角色" style="width: 100%">
-            <el-option label="管理员" value="管理员" />
-            <el-option label="普通用户" value="普通用户" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" @close="handleDialogClose">
+      <!-- 配置式表单：字段和校验规则都写在 formFields 里 -->
+      <ConfigForm ref="formRef" :model="formData" :fields="formFields" label-width="80px" />
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
@@ -83,9 +63,53 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import ConfigTable from '@/components/ConfigTable.vue'
+import ConfigForm from '@/components/ConfigForm.vue'
+import type { TableColumn, FieldConfig } from '@/components/types'
 import { getUserList, addUser, updateUser, deleteUser, type User } from '@/api/user'
+
+// --- 表格列配置：一条配置就是原来的一列 ---
+const columns: TableColumn[] = [
+  { prop: 'id', label: 'ID', width: 80, align: 'center' },
+  { prop: 'username', label: '用户名', minWidth: 120 },
+  { prop: 'email', label: '邮箱', minWidth: 180 },
+  // 角色列需要渲染成标签，用 slot 交给模板自定义
+  { prop: 'role', label: '角色', width: 120, align: 'center', slot: 'role' },
+  { prop: 'createTime', label: '创建时间', width: 180, align: 'center' },
+  // 操作列没有对应字段，只需要 slot
+  { label: '操作', width: 180, align: 'center', fixed: 'right', slot: 'action' },
+]
+
+// --- 表单字段配置：字段 + 校验规则写在一起 ---
+const formFields: FieldConfig[] = [
+  {
+    prop: 'username',
+    label: '用户名',
+    placeholder: '请输入用户名',
+    rules: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  },
+  {
+    prop: 'email',
+    label: '邮箱',
+    placeholder: '请输入邮箱',
+    rules: [
+      { required: true, message: '请输入邮箱', trigger: 'blur' },
+      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
+    ],
+  },
+  {
+    prop: 'role',
+    label: '角色',
+    type: 'select',
+    options: [
+      { label: '管理员', value: '管理员' },
+      { label: '普通用户', value: '普通用户' },
+    ],
+    rules: [{ required: true, message: '请选择角色', trigger: 'change' }],
+  },
+]
 
 // --- 数据定义 ---
 const loading = ref(false)
@@ -99,7 +123,7 @@ const searchForm = reactive({ username: '' })
 // --- 弹窗相关 ---
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增用户')
-const formRef = ref<FormInstance>()
+const formRef = ref<InstanceType<typeof ConfigForm>>()
 const isEdit = ref(false)
 const editId = ref<number | null>(null)
 
@@ -108,15 +132,6 @@ const formData = reactive({
   email: '',
   role: '普通用户',
 })
-
-const formRules: FormRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
-  ],
-  role: [{ required: true, message: '请选择角色', trigger: 'change' }],
-}
 
 // --- 获取数据 ---
 const fetchData = async () => {
@@ -168,40 +183,41 @@ const handleEdit = (row: User) => {
 }
 
 const handleSubmit = async () => {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        if (isEdit.value && editId.value) {
-          await updateUser({
-            id: editId.value,
-            username: formData.username,
-            email: formData.email,
-            role: formData.role,
-            createTime: '', // 编辑时不需要时间，但类型要求有
-          })
-          ElMessage.success('编辑成功')
-        } else {
-          await addUser({
-            username: formData.username,
-            email: formData.email,
-            role: formData.role,
-          })
-          ElMessage.success('新增成功')
-        }
-        dialogVisible.value = false
-        fetchData()
-      } catch (error) {
-        console.error(error)
-      }
+  const form = formRef.value
+  if (!form) return
+
+  // el-form 的 validate 校验失败时会 reject，这里统一转成 false
+  const valid = await form.validate().catch(() => false)
+  if (!valid) return
+
+  try {
+    if (isEdit.value && editId.value) {
+      await updateUser({
+        id: editId.value,
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+        createTime: '', // 编辑时不需要时间，但类型要求有
+      })
+      ElMessage.success('编辑成功')
+    } else {
+      await addUser({
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+      })
+      ElMessage.success('新增成功')
     }
-  })
+    dialogVisible.value = false
+    fetchData()
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const resetForm = () => {
-  if (formRef.value) {
-    formRef.value.resetFields()
-  }
+// 关闭弹窗时清掉上一次的校验红字
+const handleDialogClose = () => {
+  formRef.value?.clearValidate()
 }
 
 const handleDelete = (row: User) => {
