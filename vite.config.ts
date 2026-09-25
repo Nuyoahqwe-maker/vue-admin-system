@@ -8,6 +8,9 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
+  // GitHub Pages 的项目站点部署在子路径下（/仓库名/），
+  // 不设置 base 的话所有资源都会 404
+  base: process.env.GITHUB_PAGES ? '/vue-admin-system/' : '/',
   plugins: [
     vue(),
     vueDevTools(),
